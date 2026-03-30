@@ -1,0 +1,135 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="980" viewBox="0 0 1400 980">
+  <defs>
+    <style>
+      .title { font: 700 28px Arial, sans-serif; fill: #1f2937; }
+      .section { font: 700 20px Arial, sans-serif; fill: #1f2937; }
+      .label { font: 16px Arial, sans-serif; fill: #111827; }
+      .small { font: 14px Arial, sans-serif; fill: #374151; }
+      .tiny { font: 13px Arial, sans-serif; fill: #475569; }
+      .box { stroke: #475569; stroke-width: 2; rx: 12; ry: 12; }
+      .arrow { stroke: #475569; stroke-width: 2.5; fill: none; marker-end: url(#arrow); }
+      .soft { stroke: #94a3b8; stroke-width: 2; fill: none; }
+      .plane { fill: #dbeafe; stroke: #60a5fa; stroke-width: 2; opacity: 0.95; }
+      .line3d { stroke: #16a34a; stroke-width: 5; fill: none; }
+      .ray { stroke: #f59e0b; stroke-width: 2.5; fill: none; }
+      .support { fill: #f59e0b; stroke: #b45309; stroke-width: 1.5; }
+    </style>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L9,3 L0,6 z" fill="#475569"/>
+    </marker>
+  </defs>
+
+  <text x="700" y="40" text-anchor="middle" class="title">Principle of recovering a 3D line segment from multi-view 2D line observations</text>
+
+  <rect x="30" y="80" width="410" height="840" fill="#eef6ff" stroke="#bfdbfe" stroke-width="2" rx="18" ry="18"/>
+  <text x="60" y="115" class="section">1. Each 2D line observation defines a plane</text>
+
+  <rect x="60" y="150" width="350" height="170" class="box" fill="#ffffff"/>
+  <text x="235" y="182" text-anchor="middle" class="label">View A</text>
+  <circle cx="110" cy="250" r="10" fill="#1f2937"/>
+  <text x="110" y="275" text-anchor="middle" class="tiny">C1</text>
+  <line x1="110" y1="250" x2="250" y2="215" class="soft"/>
+  <line x1="110" y1="250" x2="250" y2="285" class="soft"/>
+  <line x1="250" y1="215" x2="250" y2="285" stroke="#2563eb" stroke-width="5"/>
+  <polygon points="150,205 315,185 350,285 185,305" class="plane"/>
+  <text x="300" y="235" class="small">observation plane P1</text>
+  <text x="255" y="305" class="tiny">2D line + camera center</text>
+
+  <rect x="60" y="360" width="350" height="170" class="box" fill="#ffffff"/>
+  <text x="235" y="392" text-anchor="middle" class="label">View B</text>
+  <circle cx="110" cy="460" r="10" fill="#1f2937"/>
+  <text x="110" y="485" text-anchor="middle" class="tiny">C2</text>
+  <line x1="110" y1="460" x2="250" y2="425" class="soft"/>
+  <line x1="110" y1="460" x2="250" y2="495" class="soft"/>
+  <line x1="250" y1="425" x2="250" y2="495" stroke="#2563eb" stroke-width="5"/>
+  <polygon points="150,415 320,395 350,495 180,515" class="plane"/>
+  <text x="300" y="445" class="small">observation plane P2</text>
+
+  <rect x="60" y="570" width="350" height="170" class="box" fill="#ffffff"/>
+  <text x="235" y="602" text-anchor="middle" class="label">View C</text>
+  <circle cx="110" cy="670" r="10" fill="#1f2937"/>
+  <text x="110" y="695" text-anchor="middle" class="tiny">C3</text>
+  <line x1="110" y1="670" x2="250" y2="635" class="soft"/>
+  <line x1="110" y1="670" x2="250" y2="705" class="soft"/>
+  <line x1="250" y1="635" x2="250" y2="705" stroke="#2563eb" stroke-width="5"/>
+  <polygon points="150,625 325,605 350,705 175,725" class="plane"/>
+  <text x="300" y="655" class="small">observation plane P3</text>
+
+  <rect x="60" y="780" width="350" height="100" class="box" fill="#dbeafe"/>
+  <text x="235" y="818" text-anchor="middle" class="label">Code mapping</text>
+  <text x="235" y="842" text-anchor="middle" class="small">line_observation_to_plane(...)</text>
+  <text x="235" y="864" text-anchor="middle" class="tiny">normal_world, offset, camera_center_world</text>
+
+  <rect x="495" y="80" width="410" height="840" fill="#fff7ed" stroke="#fed7aa" stroke-width="2" rx="18" ry="18"/>
+  <text x="525" y="115" class="section">2. Estimate an infinite 3D line from multiple planes</text>
+
+  <rect x="530" y="160" width="340" height="120" class="box" fill="#ffffff"/>
+  <text x="700" y="194" text-anchor="middle" class="label">Stack plane normals</text>
+  <text x="700" y="220" text-anchor="middle" class="small">n1, n2, n3, ... from all observations</text>
+  <text x="700" y="246" text-anchor="middle" class="tiny">normals = [obs['normal_world']]</text>
+
+  <rect x="530" y="330" width="340" height="120" class="box" fill="#ffffff"/>
+  <text x="700" y="364" text-anchor="middle" class="label">Solve line direction</text>
+  <text x="700" y="390" text-anchor="middle" class="small">SVD(normals) -> direction d</text>
+  <text x="700" y="416" text-anchor="middle" class="tiny">d should be orthogonal to all plane normals</text>
+
+  <rect x="530" y="500" width="340" height="120" class="box" fill="#ffffff"/>
+  <text x="700" y="534" text-anchor="middle" class="label">Solve anchor point a</text>
+  <text x="700" y="560" text-anchor="middle" class="small">least squares with plane offsets</text>
+  <text x="700" y="586" text-anchor="middle" class="tiny">plus one constraint: a lies orthogonal to d</text>
+
+  <rect x="530" y="670" width="340" height="150" class="box" fill="#dcfce7"/>
+  <text x="700" y="704" text-anchor="middle" class="label">Infinite 3D line</text>
+  <line x1="590" y1="770" x2="810" y2="720" class="line3d"/>
+  <circle cx="665" cy="753" r="8" fill="#16a34a"/>
+  <text x="678" y="748" class="tiny">anchor a</text>
+  <text x="760" y="710" class="tiny">direction d</text>
+  <text x="700" y="802" text-anchor="middle" class="small">L(t) = a + t d</text>
+
+  <line x1="700" y1="280" x2="700" y2="330" class="arrow"/>
+  <line x1="700" y1="450" x2="700" y2="500" class="arrow"/>
+  <line x1="700" y1="620" x2="700" y2="670" class="arrow"/>
+
+  <rect x="960" y="80" width="410" height="840" fill="#f5f3ff" stroke="#ddd6fe" stroke-width="2" rx="18" ry="18"/>
+  <text x="990" y="115" class="section">3. Recover a finite segment and validate it</text>
+
+  <rect x="995" y="160" width="340" height="180" class="box" fill="#ffffff"/>
+  <text x="1165" y="194" text-anchor="middle" class="label">Endpoint rays from all observations</text>
+  <circle cx="1045" cy="250" r="9" fill="#1f2937"/>
+  <text x="1045" y="274" text-anchor="middle" class="tiny">Ci</text>
+  <line x1="1045" y1="250" x2="1190" y2="210" class="ray"/>
+  <line x1="1045" y1="250" x2="1200" y2="270" class="ray"/>
+  <line x1="1065" y1="305" x2="1280" y2="210" class="line3d"/>
+  <circle cx="1155" cy="266" r="7" class="support"/>
+  <circle cx="1210" cy="242" r="7" class="support"/>
+  <text x="1165" y="316" text-anchor="middle" class="small">closest points between endpoint rays and infinite line</text>
+
+  <rect x="995" y="390" width="340" height="120" class="box" fill="#ffffff"/>
+  <text x="1165" y="424" text-anchor="middle" class="label">Project support points to scalars</text>
+  <text x="1165" y="450" text-anchor="middle" class="small">ti = &lt; pi - a, d &gt;</text>
+  <text x="1165" y="476" text-anchor="middle" class="tiny">collect all support positions along the line</text>
+
+  <rect x="995" y="560" width="340" height="120" class="box" fill="#ffffff"/>
+  <text x="1165" y="594" text-anchor="middle" class="label">Choose lo / hi</text>
+  <text x="1165" y="620" text-anchor="middle" class="small">percentile(10, 90) or min / max</text>
+  <text x="1165" y="646" text-anchor="middle" class="tiny">segment endpoints: p0 = a + lo d, p1 = a + hi d</text>
+
+  <rect x="995" y="730" width="340" height="150" class="box" fill="#dbeafe"/>
+  <text x="1165" y="764" text-anchor="middle" class="label">Reproject and validate</text>
+  <line x1="1055" y1="825" x2="1275" y2="775" class="line3d"/>
+  <circle cx="1115" cy="812" r="8" fill="#16a34a"/>
+  <circle cx="1245" cy="783" r="8" fill="#16a34a"/>
+  <text x="1165" y="842" text-anchor="middle" class="small">compute mean endpoint reprojection error</text>
+  <text x="1165" y="866" text-anchor="middle" class="tiny">invalid or high-error segments are discarded</text>
+
+  <line x1="1165" y1="340" x2="1165" y2="390" class="arrow"/>
+  <line x1="1165" y1="510" x2="1165" y2="560" class="arrow"/>
+  <line x1="1165" y1="680" x2="1165" y2="730" class="arrow"/>
+
+  <line x1="410" y1="445" x2="530" y2="220" class="arrow"/>
+  <line x1="870" y1="745" x2="995" y2="250" class="arrow"/>
+
+  <text x="700" y="955" text-anchor="middle" class="small">
+    Code mapping: line_observation_to_plane -> estimate_infinite_line_from_planes -> estimate_finite_segment -> compute_line_reprojection_error.
+  </text>
+</svg>

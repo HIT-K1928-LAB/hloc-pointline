@@ -1,0 +1,142 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="1500" viewBox="0 0 1400 1500">
+  <defs>
+    <style>
+      .title { font: 700 28px Arial, sans-serif; fill: #1f2937; }
+      .section { font: 700 20px Arial, sans-serif; fill: #1f2937; }
+      .label { font: 16px Arial, sans-serif; fill: #111827; }
+      .small { font: 14px Arial, sans-serif; fill: #374151; }
+      .box { stroke: #475569; stroke-width: 2; rx: 12; ry: 12; }
+      .arrow { stroke: #475569; stroke-width: 2.5; fill: none; marker-end: url(#arrow); }
+    </style>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L9,3 L0,6 z" fill="#475569"/>
+    </marker>
+  </defs>
+
+  <text x="700" y="40" text-anchor="middle" class="title">pipeline_joint_point_line_v2 overall flow</text>
+
+  <rect x="40" y="70" width="1320" height="470" fill="#eef6ff" stroke="#bfdbfe" stroke-width="2" rx="18" ry="18"/>
+  <text x="70" y="105" class="section">Mapping stage</text>
+
+  <rect x="90" y="140" width="250" height="80" class="box" fill="#ffffff"/>
+  <text x="215" y="175" text-anchor="middle" class="label">Extract joint point-line</text>
+  <text x="215" y="198" text-anchor="middle" class="label">features</text>
+
+  <rect x="410" y="140" width="250" height="80" class="box" fill="#ffffff"/>
+  <text x="535" y="175" text-anchor="middle" class="label">Build SfM scaffold</text>
+  <text x="535" y="198" text-anchor="middle" class="label">from Aachen NVM</text>
+
+  <rect x="730" y="140" width="250" height="80" class="box" fill="#ffffff"/>
+  <text x="855" y="175" text-anchor="middle" class="label">Generate db-db</text>
+  <text x="855" y="198" text-anchor="middle" class="label">covisibility pairs</text>
+
+  <rect x="1050" y="140" width="250" height="80" class="box" fill="#ffffff"/>
+  <text x="1175" y="175" text-anchor="middle" class="label">db-db point matching</text>
+  <text x="1175" y="198" text-anchor="middle" class="label">for triangulation</text>
+
+  <rect x="230" y="300" width="300" height="90" class="box" fill="#ffffff"/>
+  <text x="380" y="338" text-anchor="middle" class="label">Triangulate reference_sfm</text>
+  <text x="380" y="362" text-anchor="middle" class="small">standard 3D point map</text>
+
+  <rect x="610" y="300" width="300" height="90" class="box" fill="#ffffff"/>
+  <text x="760" y="338" text-anchor="middle" class="label">db-db line matching</text>
+  <text x="760" y="362" text-anchor="middle" class="small">verified line pairs</text>
+
+  <rect x="990" y="300" width="270" height="90" class="box" fill="#dcfce7"/>
+  <text x="1125" y="338" text-anchor="middle" class="label">Build 3D line map</text>
+  <text x="1125" y="362" text-anchor="middle" class="small">line_map.h5 + assignments</text>
+
+  <line x1="340" y1="180" x2="410" y2="180" class="arrow"/>
+  <line x1="660" y1="180" x2="730" y2="180" class="arrow"/>
+  <line x1="980" y1="180" x2="1050" y2="180" class="arrow"/>
+  <line x1="1175" y1="220" x2="1175" y2="300" class="arrow"/>
+  <line x1="855" y1="220" x2="855" y2="300" class="arrow"/>
+  <line x1="215" y1="220" x2="215" y2="345" class="arrow"/>
+  <line x1="215" y1="345" x2="230" y2="345" class="arrow"/>
+
+  <rect x="40" y="580" width="1320" height="650" fill="#fff7ed" stroke="#fed7aa" stroke-width="2" rx="18" ry="18"/>
+  <text x="70" y="615" class="section">Localization stage</text>
+
+  <rect x="90" y="660" width="250" height="80" class="box" fill="#ffffff"/>
+  <text x="215" y="695" text-anchor="middle" class="label">Extract global descriptors</text>
+  <text x="215" y="718" text-anchor="middle" class="small">for retrieval</text>
+
+  <rect x="410" y="660" width="260" height="80" class="box" fill="#ffffff"/>
+  <text x="540" y="695" text-anchor="middle" class="label">Generate query-db</text>
+  <text x="540" y="718" text-anchor="middle" class="label">retrieval pairs</text>
+
+  <rect x="740" y="660" width="250" height="80" class="box" fill="#ffffff"/>
+  <text x="865" y="695" text-anchor="middle" class="label">query-db point matches</text>
+  <text x="865" y="718" text-anchor="middle" class="small">2D point support</text>
+
+  <rect x="1060" y="660" width="250" height="80" class="box" fill="#ffffff"/>
+  <text x="1185" y="695" text-anchor="middle" class="label">query-db line matches</text>
+  <text x="1185" y="718" text-anchor="middle" class="small">verified line support</text>
+
+  <rect x="180" y="830" width="280" height="90" class="box" fill="#ffffff"/>
+  <text x="320" y="868" text-anchor="middle" class="label">V2 reranking</text>
+  <text x="320" y="892" text-anchor="middle" class="small">points + verified lines + geometry</text>
+
+  <rect x="520" y="830" width="280" height="90" class="box" fill="#ffffff"/>
+  <text x="660" y="868" text-anchor="middle" class="label">Build candidate subsets</text>
+  <text x="660" y="892" text-anchor="middle" class="small">or covisibility clusters</text>
+
+  <rect x="860" y="830" width="280" height="90" class="box" fill="#ffffff"/>
+  <text x="1000" y="868" text-anchor="middle" class="label">Run point PnP</text>
+  <text x="1000" y="892" text-anchor="middle" class="small">for each candidate subset</text>
+
+  <rect x="180" y="1010" width="280" height="90" class="box" fill="#dcfce7"/>
+  <text x="320" y="1048" text-anchor="middle" class="label">Build query 2D line</text>
+  <text x="320" y="1072" text-anchor="middle" class="label">to 3D line correspondences</text>
+
+  <rect x="520" y="1010" width="280" height="90" class="box" fill="#dcfce7"/>
+  <text x="660" y="1048" text-anchor="middle" class="label">Evaluate candidate poses</text>
+  <text x="660" y="1072" text-anchor="middle" class="small">endpoint / center / angle errors</text>
+
+  <rect x="860" y="1010" width="280" height="90" class="box" fill="#dcfce7"/>
+  <text x="1000" y="1048" text-anchor="middle" class="label">Score and select pose</text>
+  <text x="1000" y="1072" text-anchor="middle" class="small">point inliers + line quality</text>
+
+  <rect x="520" y="1150" width="300" height="90" class="box" fill="#dbeafe"/>
+  <text x="670" y="1188" text-anchor="middle" class="label">Joint point-line refinement</text>
+  <text x="670" y="1212" text-anchor="middle" class="small">least_squares optimization</text>
+
+  <line x1="340" y1="700" x2="410" y2="700" class="arrow"/>
+  <line x1="670" y1="700" x2="740" y2="700" class="arrow"/>
+  <line x1="990" y1="700" x2="1060" y2="700" class="arrow"/>
+  <line x1="865" y1="740" x2="865" y2="830" class="arrow"/>
+  <line x1="1185" y1="740" x2="1185" y2="785" class="arrow"/>
+  <line x1="1185" y1="785" x2="320" y2="785" class="arrow"/>
+  <line x1="320" y1="785" x2="320" y2="830" class="arrow"/>
+  <line x1="460" y1="875" x2="520" y2="875" class="arrow"/>
+  <line x1="800" y1="875" x2="860" y2="875" class="arrow"/>
+  <line x1="1000" y1="920" x2="1000" y2="1010" class="arrow"/>
+  <line x1="460" y1="1055" x2="520" y2="1055" class="arrow"/>
+  <line x1="800" y1="1055" x2="860" y2="1055" class="arrow"/>
+  <line x1="1000" y1="1100" x2="1000" y2="1195" class="arrow"/>
+  <line x1="520" y1="1195" x2="320" y2="1195" class="arrow"/>
+  <line x1="320" y1="1195" x2="320" y2="1100" class="arrow"/>
+
+  <line x1="1125" y1="390" x2="1125" y2="920" class="arrow"/>
+  <line x1="1125" y1="920" x2="460" y2="920" class="arrow"/>
+  <line x1="460" y1="920" x2="460" y2="1055" class="arrow"/>
+
+  <rect x="40" y="1270" width="1320" height="180" fill="#f5f3ff" stroke="#ddd6fe" stroke-width="2" rx="18" ry="18"/>
+  <text x="70" y="1305" class="section">Comparison stage</text>
+
+  <rect x="120" y="1330" width="300" height="80" class="box" fill="#ffffff"/>
+  <text x="270" y="1365" text-anchor="middle" class="label">Read point-only logs</text>
+  <text x="270" y="1388" text-anchor="middle" class="small">and hybrid-v1 logs</text>
+
+  <rect x="550" y="1330" width="300" height="80" class="box" fill="#ffffff"/>
+  <text x="700" y="1365" text-anchor="middle" class="label">Read V2 logs + line map stats</text>
+  <text x="700" y="1388" text-anchor="middle" class="small">line correspondence diagnostics</text>
+
+  <rect x="980" y="1330" width="300" height="80" class="box" fill="#ede9fe"/>
+  <text x="1130" y="1365" text-anchor="middle" class="label">Write comparison_v2.json</text>
+  <text x="1130" y="1388" text-anchor="middle" class="small">delta and line-effect analysis</text>
+
+  <line x1="420" y1="1370" x2="550" y2="1370" class="arrow"/>
+  <line x1="850" y1="1370" x2="980" y2="1370" class="arrow"/>
+  <line x1="670" y1="1240" x2="670" y2="1330" class="arrow"/>
+</svg>

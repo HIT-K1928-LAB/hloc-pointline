@@ -47,7 +47,29 @@ class NearestNeighbor(BaseModel):
         ratio_threshold = self.conf["ratio_threshold"]
         if data["descriptors0"].size(-1) == 1 or data["descriptors1"].size(-1) == 1:
             ratio_threshold = None
-        sim = torch.einsum("bdn,bdm->bnm", data["descriptors0"], data["descriptors1"])
+
+        # Handle both 2D (N, D) and 3D (B, N, D) descriptors
+        desc0 = data["descriptors0"]
+        desc1 = data["descriptors1"]
+
+        # Ensure descriptors are in the right shape
+        if desc0.ndim == 2:
+            desc0 = desc0.unsqueeze(0)  # (1, N, D)
+        if desc1.ndim == 2:
+            desc1 = desc1.unsqueeze(0)  # (1, M, D)
+
+        # Check if descriptor dimensions match
+        if desc0.shape[2] != desc1.shape[2]:
+            # If dimensions don't match, use smaller dimension
+            min_dim = min(desc0.shape[2], desc1.shape[2])
+            desc0 = desc0[:, :, :min_dim]
+            desc1 = desc1[:, :, :min_dim]
+
+        # Transpose to (B, D, N) and (B, D, M) for einsum
+        desc0 = desc0.transpose(1, 2)  # (B, D, N)
+        desc1 = desc1.transpose(1, 2)  # (B, D, M)
+
+        sim = torch.einsum("bdn,bdm->bnm", desc0, desc1)
         matches0, scores0 = find_nn(
             sim, ratio_threshold, self.conf["distance_threshold"]
         )

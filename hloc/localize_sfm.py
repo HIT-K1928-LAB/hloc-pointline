@@ -58,13 +58,25 @@ class QueryLocalizer:
     def localize(self, points2D_all, points2D_idxs, points3D_id, query_camera):
         points2D = points2D_all[points2D_idxs]
         points3D = [self.reconstruction.points3D[j].xyz for j in points3D_id]
-        ret = pycolmap.absolute_pose_estimation(
-            points2D,
-            points3D,
-            query_camera,
-            estimation_options=self.config.get("estimation", {}),
-            refinement_options=self.config.get("refinement", {}),
-        )
+        # Compatibility: try old API first (pycolmap < 3.10), then new API
+        try:
+            # Old pycolmap API: absolute_pose_estimation (version 0.6.1)
+            ret = pycolmap.absolute_pose_estimation(
+                points2D,
+                points3D,
+                query_camera,
+                estimation_options=self.config.get("estimation", {}),
+                refinement_options=self.config.get("refinement", {}),
+            )
+        except AttributeError:
+            # New pycolmap API: estimate_absolute_pose (version 3.11+)
+            ret = pycolmap.estimate_absolute_pose(
+                points2D,
+                points3D,
+                query_camera,
+                estimation_options=self.config.get("estimation", {}),
+                refinement_options=self.config.get("refinement", {}),
+            )
         return ret
 
 
@@ -93,7 +105,7 @@ def pose_from_cluster(
         )
 
         matches, _ = get_matches(matches_path, qname, image.name)
-        matches = matches[points3D_ids[matches[:, 1]] != -1]
+        matches = matches[points3D_ids[matches[:, 1]] != -1] # 这行代码是为了找到数据库中图像的特征点对应的3D点
         num_matches += len(matches)
         for idx, m in matches:
             id_3D = points3D_ids[m]
@@ -140,23 +152,28 @@ def main(
     assert retrieval.exists(), retrieval
     assert features.exists(), features
     assert matches.exists(), matches
-
+    # ('query/day/nexus4/IMG_20140520_182846.jpg', Camera(camera_id=Invalid, 
+    # model=SIMPLE_RADIAL, width=1600, height=1200, 
+    # params=[1469.200000, 800.000000, 600.000000, -0.035302] (f, cx, cy, k)))
     queries = parse_image_lists(queries, with_intrinsics=True)
     retrieval_dict = parse_retrieval(retrieval)
 
     logger.info("Reading the 3D model...")
+    # reference_sfm : outputs/aachen/sfm_xfeat+NN
+    # reference_sfm : Reconstruction(num_reg_images=4328, num_cameras=4328, num_points3D=1751754, num_observations=8327198)
     if not isinstance(reference_sfm, pycolmap.Reconstruction):
         reference_sfm = pycolmap.Reconstruction(reference_sfm)
     db_name_to_id = {img.name: i for i, img in reference_sfm.images.items()}
 
+    # {'estimation': {'ransac': {'max_error': 12}}}
     config = {"estimation": {"ransac": {"max_error": ransac_thresh}}, **(config or {})}
     localizer = QueryLocalizer(reference_sfm, config)
 
     cam_from_world = {}
     logs = {
-        "features": features,
-        "matches": matches,
-        "retrieval": retrieval,
+        "features": features, # feats-xfeat-n4096-r1024.h5
+        "matches": matches, # feats-xfeat-n4096-r1024_matches-NN-mutual_pairs-query-netvlad50.h5
+        "retrieval": retrieval, # outputs/aachen/pairs-query-netvlad50.txt
         "loc": {},
     }
     logger.info("Starting localization...")

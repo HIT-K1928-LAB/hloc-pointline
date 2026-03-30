@@ -41,7 +41,7 @@ def quaternion_to_rotation_matrix(qvec):
     )
     return R
 
-
+# 根据相机中心和旋转矩阵计算平移向量。
 def camera_center_to_translation(c, qvec):
     R = quaternion_to_rotation_matrix(qvec)
     return (-1) * np.matmul(R, c)
@@ -180,6 +180,9 @@ def main(nvm, intrinsics, database, output, skip_points=False):
     assert intrinsics.exists(), intrinsics
     assert database.exists(), database
 
+    # import pdb 
+    # pdb.set_trace()
+    
     image_ids, camera_ids = recover_database_images_and_ids(database)
 
     logger.info("Reading the NVM model...")

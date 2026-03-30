@@ -1,0 +1,117 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="980" viewBox="0 0 1400 980">
+  <defs>
+    <style>
+      .title { font: 700 28px Arial, sans-serif; fill: #1f2937; }
+      .section { font: 700 20px Arial, sans-serif; fill: #1f2937; }
+      .label { font: 16px Arial, sans-serif; fill: #111827; }
+      .small { font: 14px Arial, sans-serif; fill: #374151; }
+      .box { stroke: #475569; stroke-width: 2; rx: 12; ry: 12; }
+      .arrow { stroke: #475569; stroke-width: 2.5; fill: none; marker-end: url(#arrow); }
+    </style>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L9,3 L0,6 z" fill="#475569"/>
+    </marker>
+  </defs>
+
+  <text x="700" y="40" text-anchor="middle" class="title">How line constraints enter V2 localization</text>
+
+  <rect x="40" y="80" width="390" height="830" fill="#eef6ff" stroke="#bfdbfe" stroke-width="2" rx="18" ry="18"/>
+  <text x="70" y="115" class="section">Reference database side</text>
+
+  <rect x="90" y="150" width="290" height="80" class="box" fill="#ffffff"/>
+  <text x="235" y="184" text-anchor="middle" class="label">2D lines in db images</text>
+  <text x="235" y="208" text-anchor="middle" class="small">line segments + descriptors</text>
+
+  <rect x="90" y="280" width="290" height="80" class="box" fill="#ffffff"/>
+  <text x="235" y="314" text-anchor="middle" class="label">verified db-db line matches</text>
+  <text x="235" y="338" text-anchor="middle" class="small">cross-image line correspondences</text>
+
+  <rect x="90" y="410" width="290" height="80" class="box" fill="#ffffff"/>
+  <text x="235" y="444" text-anchor="middle" class="label">UnionFind line tracks</text>
+  <text x="235" y="468" text-anchor="middle" class="small">merge matched 2D lines into tracks</text>
+
+  <rect x="90" y="540" width="290" height="90" class="box" fill="#ffffff"/>
+  <text x="235" y="578" text-anchor="middle" class="label">Observation planes</text>
+  <text x="235" y="602" text-anchor="middle" class="small">2D line + camera center => 3D plane</text>
+
+  <rect x="90" y="680" width="290" height="90" class="box" fill="#dcfce7"/>
+  <text x="235" y="718" text-anchor="middle" class="label">Recover 3D line segment</text>
+  <text x="235" y="742" text-anchor="middle" class="small">plane intersection + endpoint support</text>
+
+  <rect x="90" y="820" width="290" height="60" class="box" fill="#dcfce7"/>
+  <text x="235" y="857" text-anchor="middle" class="label">line_map.h5 + assignments</text>
+
+  <line x1="235" y1="230" x2="235" y2="280" class="arrow"/>
+  <line x1="235" y1="360" x2="235" y2="410" class="arrow"/>
+  <line x1="235" y1="490" x2="235" y2="540" class="arrow"/>
+  <line x1="235" y1="630" x2="235" y2="680" class="arrow"/>
+  <line x1="235" y1="770" x2="235" y2="820" class="arrow"/>
+
+  <rect x="505" y="80" width="390" height="830" fill="#fff7ed" stroke="#fed7aa" stroke-width="2" rx="18" ry="18"/>
+  <text x="535" y="115" class="section">Query side</text>
+
+  <rect x="555" y="150" width="290" height="80" class="box" fill="#ffffff"/>
+  <text x="700" y="184" text-anchor="middle" class="label">Query image</text>
+  <text x="700" y="208" text-anchor="middle" class="small">joint point-line features</text>
+
+  <rect x="555" y="280" width="290" height="80" class="box" fill="#ffffff"/>
+  <text x="700" y="314" text-anchor="middle" class="label">query-db point matches</text>
+  <text x="700" y="338" text-anchor="middle" class="small">support point PnP initialization</text>
+
+  <rect x="555" y="410" width="290" height="80" class="box" fill="#ffffff"/>
+  <text x="700" y="444" text-anchor="middle" class="label">query-db verified line matches</text>
+  <text x="700" y="468" text-anchor="middle" class="small">support line evidence</text>
+
+  <rect x="555" y="540" width="290" height="90" class="box" fill="#ffffff"/>
+  <text x="700" y="578" text-anchor="middle" class="label">Initial pose from point PnP</text>
+  <text x="700" y="602" text-anchor="middle" class="small">point-only hypothesis for each candidate</text>
+
+  <rect x="555" y="680" width="290" height="90" class="box" fill="#ffffff"/>
+  <text x="700" y="718" text-anchor="middle" class="label">Map db line index to line3d_id</text>
+  <text x="700" y="742" text-anchor="middle" class="small">via line_track_assignments</text>
+
+  <rect x="555" y="820" width="290" height="60" class="box" fill="#dcfce7"/>
+  <text x="700" y="857" text-anchor="middle" class="label">query 2D line -> 3D line correspondences</text>
+
+  <line x1="700" y1="230" x2="700" y2="280" class="arrow"/>
+  <line x1="700" y1="360" x2="700" y2="540" class="arrow"/>
+  <line x1="700" y1="490" x2="700" y2="680" class="arrow"/>
+  <line x1="700" y1="770" x2="700" y2="820" class="arrow"/>
+
+  <rect x="970" y="80" width="390" height="830" fill="#f5f3ff" stroke="#ddd6fe" stroke-width="2" rx="18" ry="18"/>
+  <text x="1000" y="115" class="section">Optimization side</text>
+
+  <rect x="1020" y="180" width="290" height="90" class="box" fill="#ffffff"/>
+  <text x="1165" y="218" text-anchor="middle" class="label">Project 3D lines to query image</text>
+  <text x="1165" y="242" text-anchor="middle" class="small">under the current pose</text>
+
+  <rect x="1020" y="330" width="290" height="90" class="box" fill="#ffffff"/>
+  <text x="1165" y="368" text-anchor="middle" class="label">Compute line errors</text>
+  <text x="1165" y="392" text-anchor="middle" class="small">endpoint / center / angle</text>
+
+  <rect x="1020" y="480" width="290" height="90" class="box" fill="#ffffff"/>
+  <text x="1165" y="518" text-anchor="middle" class="label">Score candidate poses</text>
+  <text x="1165" y="542" text-anchor="middle" class="small">point inliers + line quality</text>
+
+  <rect x="1020" y="630" width="290" height="90" class="box" fill="#dbeafe"/>
+  <text x="1165" y="668" text-anchor="middle" class="label">Joint least_squares refinement</text>
+  <text x="1165" y="692" text-anchor="middle" class="small">point reprojection + line errors</text>
+
+  <rect x="1020" y="780" width="290" height="60" class="box" fill="#ede9fe"/>
+  <text x="1165" y="817" text-anchor="middle" class="label">Final refined pose</text>
+
+  <line x1="1165" y1="270" x2="1165" y2="330" class="arrow"/>
+  <line x1="1165" y1="420" x2="1165" y2="480" class="arrow"/>
+  <line x1="1165" y1="570" x2="1165" y2="630" class="arrow"/>
+  <line x1="1165" y1="720" x2="1165" y2="780" class="arrow"/>
+
+  <line x1="380" y1="850" x2="555" y2="850" class="arrow"/>
+  <line x1="845" y1="850" x2="1020" y2="225" class="arrow"/>
+  <line x1="845" y1="585" x2="1020" y2="225" class="arrow"/>
+  <line x1="845" y1="850" x2="1020" y2="375" class="arrow"/>
+  <line x1="845" y1="310" x2="1020" y2="675" class="arrow"/>
+
+  <text x="700" y="945" text-anchor="middle" class="small">
+    Key idea: V1 uses lines mainly for image reranking, while V2 turns lines into geometric 2D-to-3D constraints for pose scoring and refinement.
+  </text>
+</svg>

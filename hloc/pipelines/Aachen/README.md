@@ -14,3 +14,4 @@ unzip $dataset/images/database_and_query_images.zip -d $dataset
 ```bash
 python3 -m hloc.pipelines.Aachen.pipeline
 ```
+python3 -m hloc.pipelines.Aachen.piplinec     --dataset datasets/aachen     --outputs outputs/aachen_quick     --num_loc 50     --top_covis_images 15     --top_spatial_images 10  --ransac_thresh 12

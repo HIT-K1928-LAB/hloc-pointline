@@ -161,6 +161,8 @@ def main(
     features_ref: Optional[Path] = None,
     overwrite: bool = False,
 ) -> Path:
+    # import pdb 
+    # pdb.set_trace
     if isinstance(features, Path) or Path(features).exists():
         features_q = features
         if matches is None:
@@ -172,12 +174,17 @@ def main(
             raise ValueError(
                 "Provide an export_dir if features is not" f" a file path: {features}."
             )
+        
         features_q = Path(export_dir, features + ".h5")
         if matches is None:
+            # feats-xfeat-n4096-r1024_matches-NN-mutual_pairs-db-covis20.h5
+            # feats-xfeat-n4096-r1024_matches-NN-mutual_pairs-query-netvlad50.h5
             matches = Path(export_dir, f'{features}_{conf["output"]}_{pairs.stem}.h5')
 
     if features_ref is None:
+        # features_ref = features_q : feats-xfeat-n4096-r1024.h5
         features_ref = features_q
+    
     match_from_paths(conf, pairs, matches, features_q, features_ref, overwrite)
 
     return matches
@@ -218,14 +225,19 @@ def match_from_paths(
     logger.info(
         "Matching local features with configuration:" f"\n{pprint.pformat(conf)}"
     )
-
+    # import pdb 
+    # pdb.set_trace()
+    # pair_path:outputs/aachen/pairs-db-covis20.txt
+    # match_path:outputs/aachen/feats-xfeat-n4096-r1024_matches-NN-mutual_pairs-db-covis20.h5
+    # feature_path_q:outputs/aachen/feats-xfeat-n4096-r1024.h5
+    # feature_path_ref:outputs/aachen/feats-xfeat-n4096-r1024.h5
     if not feature_path_q.exists():
         raise FileNotFoundError(f"Query feature file {feature_path_q}.")
     if not feature_path_ref.exists():
         raise FileNotFoundError(f"Reference feature file {feature_path_ref}.")
-    match_path.parent.mkdir(exist_ok=True, parents=True)
+    match_path.parent.mkdir(exist_ok=True, parents=True)# outputs/aachen
 
-    assert pairs_path.exists(), pairs_path
+    assert pairs_path.exists(), pairs_path # outputs/aachen/pairs-db-covis20.txt
     pairs = parse_retrieval(pairs_path)
     pairs = [(q, r) for q, rs in pairs.items() for r in rs]
     pairs = find_unique_new_pairs(pairs, None if overwrite else match_path)
@@ -235,7 +247,7 @@ def match_from_paths(
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
     Model = dynamic_load(matchers, conf["model"]["name"])
-    model = Model(conf["model"]).eval().to(device)
+    model = Model(conf["model"]).eval().to(device) # NearestNeighbor()
 
     dataset = FeaturePairsDataset(pairs, feature_path_q, feature_path_ref)
     loader = torch.utils.data.DataLoader(

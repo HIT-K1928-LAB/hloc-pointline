@@ -36,9 +36,9 @@ def run(args):
     logger.info("Configs for feature matchers:\n%s", pformat(match_features.confs))
 
     # pick one of the configurations for extraction and matching
-    retrieval_conf = extract_features.confs["netvlad"]
-    feature_conf = extract_features.confs["superpoint_max"]
-    matcher_conf = match_features.confs["superglue"]
+    retrieval_conf = extract_features.confs["gaussvladplus"]
+    feature_conf = extract_features.confs["xfeatplus_aachen"]
+    matcher_conf = match_features.confs["NN-mutual"]
 
     features = extract_features.main(feature_conf, images, outputs)
 
@@ -79,7 +79,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--dataset",
         type=Path,
-        default="datasets/aachen_v1.1",
+        default="datasets/aachen/aachen_v1_1",
         help="Path to the dataset, default: %(default)s",
     )
     parser.add_argument(

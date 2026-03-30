@@ -38,6 +38,71 @@ confs = {
             "resize_max": 1024,
         },
     },
+    "xfeat_aachen": {
+        "output": "feats-xfeat-n4096-r1024",
+        "model": {
+            "name": "xfeat",
+            "top_k": 4096, 
+            "detection_threshold":0.05,
+        },
+        "preprocessing": {
+            "grayscale": True,
+            "resize_max": 1024,
+        },
+    },
+    "xfeatplus_aachen": {
+        "output": "feats-xfeat-n4096-r1024",
+        "model": {
+            "name": "xfeatplus",
+            "top_k": 4096, 
+            "detection_threshold":0.05,
+        },
+        "preprocessing": {
+            "grayscale": True,
+            "resize_max": 1024,
+        },
+    },
+    "xfeatatten_aachen": {
+        "output": "feats-xfeat-n4096-r1024",
+        "model": {
+            "name": "xfeatplusatten",
+            "top_k": 4096, 
+            "detection_threshold":0.05,
+        },
+        "preprocessing": {
+            "grayscale": True,
+            "resize_max": 1024,
+        },
+    },
+    "xfeatfusion_aachen": {
+        "output": "feats-xfeat-n4096-r1024",
+        "model": {
+            "name": "xfeatplusfusion",
+            "top_k": 4096, 
+            "detection_threshold":0.05,
+        },
+        "preprocessing": {
+            "grayscale": True,
+            "resize_max": 1024,
+        },
+    },
+    "joint_xfeat_mlsd_hloc": {
+        "output": "feats-joint-xfeat-mlsd-r1024",
+        "model": {
+            "name": "joint_xfeat_mlsd",
+            "config": "/home/hxy/doctor/feature dectect/linedectect/mlsd_pytorchv3/workdir/models/xfeat_mlsd_512_gt_plus_pred_plus_align/cfg.yaml",
+            "checkpoint": "/home/hxy/doctor/feature dectect/linedectect/mlsd_pytorchv3/workdir/models/xfeat_mlsd_512_gt_plus_pred_plus_align/best.pth",
+            "line_score_thresh": 0.10,
+            "line_len_thresh": 8.0,
+            "line_top_k": 500,
+            "point_top_k": 4096,
+            "point_score_thresh": 0.05,
+        },
+        "preprocessing": {
+            "grayscale": False,
+            "resize_max": 1024,
+        },
+    },
     # Resize images to 1600px even if they are originally smaller.
     # Improves the keypoint localization if the images are of good quality.
     "superpoint_max": {
@@ -136,6 +201,31 @@ confs = {
         "model": {"name": "netvlad"},
         "preprocessing": {"resize_max": 1024},
     },
+    "attenvlad": {
+        "output": "global-feats-attenvlad",
+        "model": {"name": "attenvlad"},
+        "preprocessing": {"resize_max": 1024},
+    },
+    "gaussvladplus": {
+        "output": "global-feats-gaussvladplus",
+        "model": {"name": "gaussvladplus"},
+        "preprocessing": {"resize_max": 1024},
+    },
+    "gaussvladsimple": {
+        "output": "global-feats-gaussvladplus",
+        "model": {"name": "gaussvladplus"},
+        "preprocessing": {"resize_max": 1024},
+    },
+    "gaussvladplusvgg": {
+        "output": "global-feats-gaussvladplusvgg",
+        "model": {"name": "gaussvladplusvgg"},
+        "preprocessing": {"resize_max": 1024},
+    },
+    "netvladtorch": {
+        "output": "global-feats-netvladtorch",
+        "model": {"name": "netvladtorch"},
+        "preprocessing": {"resize_max": 1024},
+    },
     "openibl": {
         "output": "global-feats-openibl",
         "model": {"name": "openibl"},
@@ -201,10 +291,13 @@ class ImageDataset(torch.utils.data.Dataset):
                     raise ValueError(f"Image {name} does not exists in root: {root}.")
 
     def __getitem__(self, idx):
+        
+        # import pdb
+        # pdb.set_trace()
         name = self.names[idx]
         image = read_image(self.root / name, self.conf.grayscale)
         image = image.astype(np.float32)
-        size = image.shape[:2][::-1]
+        size = image.shape[:2][::-1] # HW-->WH
 
         if self.conf.resize_max and (
             self.conf.resize_force or max(size) > self.conf.resize_max
@@ -265,7 +358,16 @@ def main(
     for idx, data in enumerate(tqdm(loader)):
         name = dataset.names[idx]
         pred = model({"image": data["image"].to(device, non_blocking=True)})
-        pred = {k: v[0].cpu().numpy() for k, v in pred.items()}
+        # pred["descriptors"] = pred["descriptors"].permute(1, 0)
+        # print(type(pred["descriptors"]))
+        # print("pred1",pred)
+        # pred = {k: v[0].cpu().numpy() for k, v in pred.items()}
+        pred = {k: v.cpu().numpy() for k, v in pred.items()}
+        # print("dict_keys",pred.keys()  )
+        # print("pred_line_segments",pred["line_segments"],pred["line_segments"].shape)
+        # print("pred_line_centers",pred["line_centers"],pred["line_centers"].shape)
+        # print("pred_line_descriptors",pred["line_descriptors"],pred["line_descriptors"].shape)
+        # print("pred",pred["keypoints"],pred["scores"].shape,pred["descriptors"])
 
         pred["image_size"] = original_size = data["original_size"][0].numpy()
         if "keypoints" in pred:
@@ -276,10 +378,18 @@ def main(
                 pred["scales"] *= scales.mean()
             # add keypoint uncertainties scaled to the original resolution
             uncertainty = getattr(model, "detection_noise", 1) * scales.mean()
+            if "line_segments" in pred:
+                line_scales = np.asarray([scales[0], scales[1], scales[0], scales[1]], dtype=np.float32)
+                pred["line_segments"] = (pred["line_segments"] + 0.5) * line_scales[None] - 0.5
+            if "line_centers" in pred:
+                pred["line_centers"] = (pred["line_centers"] + 0.5) * scales[None] - 0.5
 
         if as_half:
+            keep_float32 = {"line_segments", "line_centers", "image_size"}
             for k in pred:
                 dt = pred[k].dtype
+                if k in keep_float32:
+                    continue
                 if (dt == np.float32) and (dt != np.float16):
                     pred[k] = pred[k].astype(np.float16)
 

@@ -231,9 +231,17 @@ def main(
     assert features.exists(), features
     assert pairs.exists(), pairs
     assert matches.exists(), matches
+    # sfm_dir:outputs/aachen/sfm_xfeat+NN
+    # reference_model:outputs/aachen/sfm_sift
+    # image_dir: datasets/aachen/images_upright
+    # pairs:outputs/aachen/pairs-db-covis20.txt
+    # features:outputs/aachen/feats-xfeat-n4096-r1024.h5
+    # matches:outputs/aachen/feats-xfeat-n4096-r1024_matches-NN-mutual_pairs-db-covis20.h5
+    # 
 
     sfm_dir.mkdir(parents=True, exist_ok=True)
     database = sfm_dir / "database.db"
+    # reference_model:outputs/aachen/sfm_sift
     reference = pycolmap.Reconstruction(reference_model)
 
     image_ids = create_db_from_model(reference, database)

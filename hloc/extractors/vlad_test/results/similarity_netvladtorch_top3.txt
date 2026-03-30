@@ -1,0 +1,57 @@
+相似度分析结果 - similarity_netvladtorch
+================================================================================
+
+图像: loop_image_ori1292_image.png
+--------------------------------------------------------------------------------
+  1. loop_image_ori1296_image.png: 0.813481
+  2. loop_image_ori1301_image.png: 0.748055
+  3. loop_image_ori1302_image.png: 0.709086
+
+图像: loop_image_ori1296_image.png
+--------------------------------------------------------------------------------
+  1. loop_image_ori1301_image.png: 0.814591
+  2. loop_image_ori1292_image.png: 0.813481
+  3. loop_image_ori1302_image.png: 0.732299
+
+图像: loop_image_ori1301_image.png
+--------------------------------------------------------------------------------
+  1. loop_image_ori1302_image.png: 0.817959
+  2. loop_image_ori1296_image.png: 0.814591
+  3. loop_image_ori1292_image.png: 0.748055
+
+图像: loop_image_ori1302_image.png
+--------------------------------------------------------------------------------
+  1. loop_image_ori1304_image.png: 0.839687
+  2. loop_image_ori1301_image.png: 0.817959
+  3. loop_image_ori1296_image.png: 0.732299
+
+图像: loop_image_ori1304_image.png
+--------------------------------------------------------------------------------
+  1. loop_image_ori1302_image.png: 0.839687
+  2. loop_image_ori1301_image.png: 0.737688
+  3. loop_image_ori22_image.png: 0.715874
+
+图像: loop_image_ori20_image.png
+--------------------------------------------------------------------------------
+  1. loop_image_ori22_image.png: 0.926133
+  2. loop_image_ori21_image.png: 0.925191
+  3. loop_image_ori23_image.png: 0.786711
+
+图像: loop_image_ori21_image.png
+--------------------------------------------------------------------------------
+  1. loop_image_ori20_image.png: 0.925191
+  2. loop_image_ori22_image.png: 0.911931
+  3. loop_image_ori23_image.png: 0.777316
+
+图像: loop_image_ori22_image.png
+--------------------------------------------------------------------------------
+  1. loop_image_ori20_image.png: 0.926133
+  2. loop_image_ori21_image.png: 0.911931
+  3. loop_image_ori23_image.png: 0.780243
+
+图像: loop_image_ori23_image.png
+--------------------------------------------------------------------------------
+  1. loop_image_ori20_image.png: 0.786711
+  2. loop_image_ori22_image.png: 0.780243
+  3. loop_image_ori21_image.png: 0.777316
+

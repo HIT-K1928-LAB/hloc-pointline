@@ -57,7 +57,7 @@ def pairs_from_score_matrix(
     if isinstance(scores, np.ndarray):
         scores = torch.from_numpy(scores)
     invalid = torch.from_numpy(invalid).to(scores.device)
-    if min_score is not None:
+    if min_score is not None: # 根据最小阈值更新无效矩阵
         invalid |= scores < min_score
     scores.masked_fill_(invalid, float("-inf"))
 
@@ -90,7 +90,7 @@ def main(
         db_descriptors = descriptors
     if isinstance(db_descriptors, (Path, str)):
         db_descriptors = [db_descriptors]
-    name2db = {n: i for i, p in enumerate(db_descriptors) for n in list_h5_names(p)}
+    name2db = {n: i for i, p in enumerate(db_descriptors) for n in list_h5_names(p)} # 返回所有的组名字
     db_names_h5 = list(name2db.keys())
     query_names_h5 = list_h5_names(descriptors)
 
@@ -106,7 +106,9 @@ def main(
     device = "cuda" if torch.cuda.is_available() else "cpu"
     db_desc = get_descriptors(db_names, db_descriptors, name2db)
     query_desc = get_descriptors(query_names, descriptors)
-    sim = torch.einsum("id,jd->ij", query_desc.to(device), db_desc.to(device))
+    # print("db_desc",db_desc.shape)
+    # print("query_desc",query_desc.shape)
+    sim = torch.einsum("id,jd->ij", query_desc.squeeze(1).to(device), db_desc.squeeze(1).to(device))
 
     # Avoid self-matching
     self = np.array(query_names)[:, None] == np.array(db_names)[None]

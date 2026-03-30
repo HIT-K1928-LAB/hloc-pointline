@@ -1,0 +1,107 @@
+==============================================================================
+Bundle adjustment
+==============================================================================
+I20260324 17:13:02.601533 3736463 misc.cc:205] 
+Bundle adjustment report
+------------------------
+I20260324 17:13:02.601591 3736463 bundle_adjustment.cc:942] 
+    Residuals : 15581632
+   Parameters : 5380626
+   Iterations : 4
+         Time : 13.785 [s]
+ Initial cost : 0.950504 [px]
+   Final cost : 0.901628 [px]
+  Termination : Convergence
+
+I20260324 17:13:05.321223 3736463 incremental_mapper.cc:175] => Completed observations: 91634
+I20260324 17:13:09.137581 3736463 incremental_mapper.cc:178] => Merged observations: 290172
+I20260324 17:13:10.161775 3736463 incremental_mapper.cc:160] => Filtered observations: 51762
+I20260324 17:13:10.161805 3736463 sfm.cc:521] => Changed observations: 0.055651
+I20260324 17:13:13.056519 3736463 misc.cc:198] 
+==============================================================================
+Bundle adjustment
+==============================================================================
+I20260324 17:13:35.560107 3736463 misc.cc:205] 
+Bundle adjustment report
+------------------------
+I20260324 17:13:35.560163 3736463 bundle_adjustment.cc:942] 
+    Residuals : 15655496
+   Parameters : 5314554
+   Iterations : 4
+         Time : 13.6999 [s]
+ Initial cost : 0.904505 [px]
+   Final cost : 0.893168 [px]
+  Termination : Convergence
+
+I20260324 17:13:38.063832 3736463 incremental_mapper.cc:175] => Completed observations: 35886
+I20260324 17:13:41.598908 3736463 incremental_mapper.cc:178] => Merged observations: 135243
+I20260324 17:13:42.490083 3736463 incremental_mapper.cc:160] => Filtered observations: 14294
+I20260324 17:13:42.490111 3736463 sfm.cc:521] => Changed observations: 0.023688
+I20260324 17:13:45.468822 3736463 misc.cc:198] 
+==============================================================================
+Bundle adjustment
+==============================================================================
+I20260324 17:14:06.022034 3736463 misc.cc:205] 
+Bundle adjustment report
+------------------------
+I20260324 17:14:06.022086 3736463 bundle_adjustment.cc:942] 
+    Residuals : 15697958
+   Parameters : 5289933
+   Iterations : 3
+         Time : 11.7851 [s]
+ Initial cost : 0.894768 [px]
+   Final cost : 0.891535 [px]
+  Termination : Convergence
+
+I20260324 17:14:08.441921 3736463 incremental_mapper.cc:175] => Completed observations: 10325
+I20260324 17:14:11.814489 3736463 incremental_mapper.cc:178] => Merged observations: 36894
+I20260324 17:14:12.677680 3736463 incremental_mapper.cc:160] => Filtered observations: 4941
+I20260324 17:14:12.677698 3736463 sfm.cc:521] => Changed observations: 0.006645
+I20260324 17:14:15.408926 3736463 misc.cc:198] 
+==============================================================================
+Extracting colors
+==============================================================================
+[2026/03/24 17:14:44 hloc INFO] Finished the triangulation with statistics:
+Reconstruction:
+        num_reg_images = 4328
+        num_cameras = 4328
+        num_points3D = 1761272
+        num_observations = 7854307
+        mean_track_length = 4.45945
+        mean_observations_per_image = 1814.77
+        mean_reprojection_error = 1.47189
+[2026/03/24 17:14:44 hloc INFO] Matching line features for database-database pairs...
+[2026/03/24 17:14:44 hloc INFO] Matching line features with configuration:
+{'model': {'min_similarity': 0.75,
+           'name': 'line_nearest_neighbor',
+           'precision_preset': 'strict',
+           'ratio_threshold': 0.82},
+ 'output': 'line-matches-joint-strict'}
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████| 56734/56734 [2:53:33<00:00,  5.45it/s]
+[2026/03/24 20:08:18 hloc INFO] Building 3D line map...
+Traceback (most recent call last):
+  File "/home/k1928-d/anaconda3/envs/hl/lib/python3.9/runpy.py", line 197, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/home/k1928-d/anaconda3/envs/hl/lib/python3.9/runpy.py", line 87, in _run_code
+    exec(code, run_globals)
+  File "/media/k1928-d/028efb59-765e-462b-8aa6-085565fa80eb/hxy/Hierarchical-Localizationv2/hloc/pipelines/Aachen/pipeline_joint_point_line_v2.py", line 471, in <module>
+    run(args)
+  File "/media/k1928-d/028efb59-765e-462b-8aa6-085565fa80eb/hxy/Hierarchical-Localizationv2/hloc/pipelines/Aachen/pipeline_joint_point_line_v2.py", line 288, in run
+    _, _, line_map_summary = line_mapping.main(
+  File "/media/k1928-d/028efb59-765e-462b-8aa6-085565fa80eb/hxy/Hierarchical-Localizationv2/hloc/line_mapping.py", line 419, in main
+    tracks = build_line_tracks(
+  File "/media/k1928-d/028efb59-765e-462b-8aa6-085565fa80eb/hxy/Hierarchical-Localizationv2/hloc/line_mapping.py", line 302, in build_line_tracks
+    reproj_error = compute_line_reprojection_error(segment, observations)
+  File "/media/k1928-d/028efb59-765e-462b-8aa6-085565fa80eb/hxy/Hierarchical-Localizationv2/hloc/line_mapping.py", line 185, in compute_line_reprojection_error
+    projected = project_line_segment(obs['camera'], obs['image'].cam_from_world, segment_world)
+  File "/media/k1928-d/028efb59-765e-462b-8aa6-085565fa80eb/hxy/Hierarchical-Localizationv2/hloc/line_mapping.py", line 176, in project_line_segment
+    proj, valid = _project_world_points(query_camera, cam_from_world, segment_world)
+  File "/media/k1928-d/028efb59-765e-462b-8aa6-085565fa80eb/hxy/Hierarchical-Localizationv2/hloc/line_mapping.py", line 81, in _project_world_points
+    proj_valid = query_camera.img_from_cam(points_cam[valid])
+TypeError: img_from_cam(): incompatible function arguments. The following argument types are supported:
+    1. (self: pycolmap.Camera, arg0: numpy.ndarray[numpy.float64[2, 1]]) -> numpy.ndarray[numpy.float64[2, 1]]
+    2. (self: pycolmap.Camera, arg0: numpy.ndarray[numpy.float64[m, 2]]) -> numpy.ndarray[numpy.float64[m, 2]]
+    3. (self: pycolmap.Camera, arg0: List[colmap::Point2D]) -> numpy.ndarray[numpy.float64[m, 2]]
+
+Invoked with: Camera(camera_id=623, model=SIMPLE_RADIAL, width=1600, height=1067, params=[1103.270000, 800.000000, 533.500000, -0.076719] (f, cx, cy, k)), array([[ 1.53796807, -2.11501262,  7.69505762],
+       [ 1.54639817, -2.82851435,  7.83850987]])

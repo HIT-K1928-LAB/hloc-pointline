@@ -1,0 +1,141 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="860" viewBox="0 0 1400 860">
+  <defs>
+    <style>
+      .title { font: 700 28px Arial, sans-serif; fill: #1f2937; }
+      .section { font: 700 20px Arial, sans-serif; fill: #1f2937; }
+      .label { font: 16px Arial, sans-serif; fill: #111827; }
+      .small { font: 14px Arial, sans-serif; fill: #374151; }
+      .box { stroke: #475569; stroke-width: 2; rx: 12; ry: 12; }
+      .arrow { stroke: #475569; stroke-width: 2.5; fill: none; marker-end: url(#arrow); }
+      .edge { stroke: #2563eb; stroke-width: 3; fill: none; }
+      .skip { stroke: #ef4444; stroke-width: 3; stroke-dasharray: 8 6; fill: none; }
+      .node { stroke: #475569; stroke-width: 2; fill: #ffffff; }
+    </style>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L9,3 L0,6 z" fill="#475569"/>
+    </marker>
+  </defs>
+
+  <text x="700" y="40" text-anchor="middle" class="title">Principle of building line tracks from verified line matches</text>
+
+  <rect x="30" y="80" width="300" height="720" fill="#eef6ff" stroke="#bfdbfe" stroke-width="2" rx="18" ry="18"/>
+  <text x="60" y="115" class="section">1. Input pairs</text>
+
+  <rect x="60" y="150" width="240" height="95" class="box" fill="#ffffff"/>
+  <text x="180" y="184" text-anchor="middle" class="label">Pair A-B</text>
+  <text x="180" y="208" text-anchor="middle" class="small">(A, line 12) &lt;-&gt; (B, line 5)</text>
+  <text x="180" y="230" text-anchor="middle" class="small">verified = true</text>
+
+  <rect x="60" y="285" width="240" height="95" class="box" fill="#ffffff"/>
+  <text x="180" y="319" text-anchor="middle" class="label">Pair B-C</text>
+  <text x="180" y="343" text-anchor="middle" class="small">(B, line 5) &lt;-&gt; (C, line 8)</text>
+  <text x="180" y="365" text-anchor="middle" class="small">verified = true</text>
+
+  <rect x="60" y="420" width="240" height="95" class="box" fill="#ffffff"/>
+  <text x="180" y="454" text-anchor="middle" class="label">Pair A-D</text>
+  <text x="180" y="478" text-anchor="middle" class="small">(A, line 4) &lt;-&gt; (D, line 1)</text>
+  <text x="180" y="500" text-anchor="middle" class="small">verified = true</text>
+
+  <rect x="60" y="555" width="240" height="95" class="box" fill="#ffffff"/>
+  <text x="180" y="589" text-anchor="middle" class="label">Pair C-D</text>
+  <text x="180" y="613" text-anchor="middle" class="small">(C, line 3) &lt;-&gt; (D, line 6)</text>
+  <text x="180" y="635" text-anchor="middle" class="small">verified = false, ignored</text>
+
+  <rect x="60" y="690" width="240" height="80" class="box" fill="#dbeafe"/>
+  <text x="180" y="724" text-anchor="middle" class="label">Node definition</text>
+  <text x="180" y="748" text-anchor="middle" class="small">node = (image_name, line_idx)</text>
+
+  <rect x="370" y="80" width="320" height="720" fill="#fff7ed" stroke="#fed7aa" stroke-width="2" rx="18" ry="18"/>
+  <text x="400" y="115" class="section">2. UnionFind merging</text>
+
+  <rect x="405" y="150" width="250" height="80" class="box" fill="#ffffff"/>
+  <text x="530" y="184" text-anchor="middle" class="label">For each db-db pair</text>
+  <text x="530" y="208" text-anchor="middle" class="small">read line matches and verified mask</text>
+
+  <rect x="405" y="275" width="250" height="110" class="box" fill="#ffffff"/>
+  <text x="530" y="309" text-anchor="middle" class="label">If verified == true</text>
+  <text x="530" y="333" text-anchor="middle" class="small">node0 = (name0, idx0)</text>
+  <text x="530" y="355" text-anchor="middle" class="small">node1 = (name1, idx1)</text>
+
+  <rect x="405" y="430" width="250" height="80" class="box" fill="#dcfce7"/>
+  <text x="530" y="464" text-anchor="middle" class="label">uf.union(node0, node1)</text>
+  <text x="530" y="488" text-anchor="middle" class="small">add both nodes into touched_nodes</text>
+
+  <rect x="405" y="555" width="250" height="80" class="box" fill="#fee2e2"/>
+  <text x="530" y="589" text-anchor="middle" class="label">If verified == false</text>
+  <text x="530" y="613" text-anchor="middle" class="small">skip this edge completely</text>
+
+  <rect x="405" y="680" width="250" height="90" class="box" fill="#dbeafe"/>
+  <text x="530" y="716" text-anchor="middle" class="label">After all unions</text>
+  <text x="530" y="740" text-anchor="middle" class="small">group touched_nodes by uf.find(root)</text>
+
+  <line x1="530" y1="230" x2="530" y2="275" class="arrow"/>
+  <line x1="530" y1="385" x2="530" y2="430" class="arrow"/>
+  <line x1="530" y1="385" x2="530" y2="555" class="arrow"/>
+  <line x1="530" y1="510" x2="530" y2="680" class="arrow"/>
+
+  <rect x="730" y="80" width="330" height="720" fill="#f5f3ff" stroke="#ddd6fe" stroke-width="2" rx="18" ry="18"/>
+  <text x="760" y="115" class="section">3. Connected components</text>
+
+  <rect x="765" y="150" width="260" height="250" class="box" fill="#ffffff"/>
+  <text x="895" y="182" text-anchor="middle" class="label">Component 1</text>
+  <circle cx="815" cy="240" r="26" class="node"/>
+  <circle cx="895" cy="240" r="26" class="node"/>
+  <circle cx="975" cy="240" r="26" class="node"/>
+  <text x="815" y="245" text-anchor="middle" class="small">A:12</text>
+  <text x="895" y="245" text-anchor="middle" class="small">B:5</text>
+  <text x="975" y="245" text-anchor="middle" class="small">C:8</text>
+  <path d="M841 240 L869 240" class="edge"/>
+  <path d="M921 240 L949 240" class="edge"/>
+  <text x="895" y="310" text-anchor="middle" class="small">all three nodes share one root</text>
+  <text x="895" y="334" text-anchor="middle" class="small">=> one potential line track</text>
+
+  <rect x="765" y="450" width="260" height="180" class="box" fill="#ffffff"/>
+  <text x="895" y="482" text-anchor="middle" class="label">Component 2</text>
+  <circle cx="845" cy="545" r="26" class="node"/>
+  <circle cx="945" cy="545" r="26" class="node"/>
+  <text x="845" y="550" text-anchor="middle" class="small">A:4</text>
+  <text x="945" y="550" text-anchor="middle" class="small">D:1</text>
+  <path d="M871 545 L919 545" class="edge"/>
+  <text x="895" y="602" text-anchor="middle" class="small">another connected component</text>
+
+  <line x1="655" y1="470" x2="765" y2="275" class="arrow"/>
+  <line x1="655" y1="470" x2="765" y2="545" class="arrow"/>
+
+  <rect x="1100" y="80" width="270" height="720" fill="#ecfdf5" stroke="#a7f3d0" stroke-width="2" rx="18" ry="18"/>
+  <text x="1130" y="115" class="section">4. Track candidates</text>
+
+  <rect x="1135" y="170" width="200" height="120" class="box" fill="#ffffff"/>
+  <text x="1235" y="204" text-anchor="middle" class="label">Track candidate 1</text>
+  <text x="1235" y="228" text-anchor="middle" class="small">{A:12, B:5, C:8}</text>
+  <text x="1235" y="252" text-anchor="middle" class="small">support_count = 3</text>
+  <text x="1235" y="274" text-anchor="middle" class="small">unique_images = 3</text>
+
+  <rect x="1135" y="330" width="200" height="120" class="box" fill="#ffffff"/>
+  <text x="1235" y="364" text-anchor="middle" class="label">Track candidate 2</text>
+  <text x="1235" y="388" text-anchor="middle" class="small">{A:4, D:1}</text>
+  <text x="1235" y="412" text-anchor="middle" class="small">support_count = 2</text>
+  <text x="1235" y="434" text-anchor="middle" class="small">unique_images = 2</text>
+
+  <rect x="1135" y="505" width="200" height="165" class="box" fill="#dcfce7"/>
+  <text x="1235" y="539" text-anchor="middle" class="label">Apply filters</text>
+  <text x="1235" y="563" text-anchor="middle" class="small">min_support_count</text>
+  <text x="1235" y="585" text-anchor="middle" class="small">min_unique_images</text>
+  <text x="1235" y="607" text-anchor="middle" class="small">camera baseline check</text>
+  <text x="1235" y="629" text-anchor="middle" class="small">only valid components survive</text>
+
+  <rect x="1135" y="710" width="200" height="60" class="box" fill="#bbf7d0"/>
+  <text x="1235" y="747" text-anchor="middle" class="label">Potential 3D line tracks</text>
+
+  <line x1="1025" y1="275" x2="1135" y2="230" class="arrow"/>
+  <line x1="1025" y1="545" x2="1135" y2="390" class="arrow"/>
+  <line x1="1235" y1="450" x2="1235" y2="505" class="arrow"/>
+  <line x1="1235" y1="670" x2="1235" y2="710" class="arrow"/>
+
+  <path d="M300 602 C340 602, 360 602, 405 602" class="skip"/>
+  <text x="352" y="585" text-anchor="middle" class="small" fill="#ef4444">ignored</text>
+
+  <text x="700" y="835" text-anchor="middle" class="small">
+    Code mapping: iterate verified line matches -> uf.union(node0, node1) -> group nodes by root -> each connected component becomes one line-track candidate.
+  </text>
+</svg>
