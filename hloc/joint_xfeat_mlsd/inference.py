@@ -147,7 +147,7 @@ def load_cfg(config_path):
     cfg = get_cfg_defaults()
     with open(config_path, "r") as f:
         raw_cfg = yaml.safe_load(f) or {}
-    keep_keys = {"datasets", "model", "loss", "decode"}
+    keep_keys = {"datasets", "model", "loss", "decode", "matcher"}
     filtered = {key: value for key, value in raw_cfg.items() if key in keep_keys}
     cfg.merge_from_other_cfg(CN(filtered))
     return cfg
@@ -254,6 +254,138 @@ def scale_lines_to_image(lines_model, centers_model, image_width, image_height, 
         line_centers_xy = centers_model.astype(np.float32) * center_scale[None, :]
 
     return line_centers_xy, line_segments_xyxy
+
+
+def preprocess_like_xfeat(image):
+    if image.ndim != 4:
+        raise ValueError("Expected image tensor with shape [B, C, H, W].")
+    original_height = int(image.shape[-2])
+    original_width = int(image.shape[-1])
+    resized_height = max((original_height // 32) * 32, 32)
+    resized_width = max((original_width // 32) * 32, 32)
+    resize_ratio_h = float(original_height) / float(resized_height)
+    resize_ratio_w = float(original_width) / float(resized_width)
+    if resized_height != original_height or resized_width != original_width:
+        image = F.interpolate(
+            image,
+            (resized_height, resized_width),
+            mode="bilinear",
+            align_corners=False,
+        )
+    return image, resize_ratio_h, resize_ratio_w
+
+
+def scale_keypoints_to_image(points_model, resize_ratio_h, resize_ratio_w):
+    if points_model.size == 0:
+        return np.zeros((0, 2), dtype=np.float32)
+    scale = np.asarray([resize_ratio_w, resize_ratio_h], dtype=np.float32)
+    return points_model.astype(np.float32) * scale[None, :]
+
+
+def run_joint_inference_xfeat(model, image, decode_cfg, point_decoder=None):
+    if point_decoder is None:
+        point_decoder = JointXFeatPostProcessor()
+    if image.ndim != 4:
+        raise ValueError("Expected image tensor with shape [B, C, H, W].")
+
+    original_height = int(image.shape[-2])
+    original_width = int(image.shape[-1])
+    image_tensor, resize_ratio_h, resize_ratio_w = preprocess_like_xfeat(image)
+
+    with torch.inference_mode():
+        outputs = model(image_tensor, return_joint=True)
+
+    required_keys = {"line_preds", "descriptor_map", "xfeat_feats", "xfeat_keypoints", "xfeat_heatmap"}
+    if not required_keys.issubset(set(outputs.keys())):
+        missing = sorted(required_keys - set(outputs.keys()))
+        raise RuntimeError(f"Joint model outputs missing keys: {missing}")
+
+    line_map_height = int(outputs["line_preds"].shape[-2])
+    line_map_width = int(outputs["line_preds"].shape[-1])
+    coord_scale = (float(line_map_width), float(line_map_height))
+
+    center_pts, lines, _, line_scores, line_desc = model.decode_lines_with_descriptors(
+        outputs["line_preds"],
+        outputs["descriptor_map"],
+        score_thresh=decode_cfg.line_score_thresh,
+        len_thresh=decode_cfg.line_len_thresh,
+        topk_n=decode_cfg.line_top_k,
+        ksize=3,
+        coord_scale=coord_scale,
+        num_samples=decode_cfg.descriptor_num_samples,
+    )
+
+    point_outputs = point_decoder.decode(
+        outputs["xfeat_feats"],
+        outputs["xfeat_keypoints"],
+        outputs["xfeat_heatmap"],
+        top_k=decode_cfg.point_top_k,
+        detection_threshold=decode_cfg.point_score_thresh,
+    )[0]
+
+    center_pts_np = tensor_to_numpy(center_pts).astype(np.float32) if center_pts is not None else np.zeros((0, 2), dtype=np.float32)
+    lines_np = tensor_to_numpy(lines).astype(np.float32) if lines is not None else np.zeros((0, 4), dtype=np.float32)
+    line_scores_np = tensor_to_numpy(line_scores).astype(np.float32) if line_scores is not None else np.zeros((0,), dtype=np.float32)
+    if line_desc is None:
+        line_desc_np = np.zeros((0, 64), dtype=np.float32)
+    else:
+        line_desc_np = tensor_to_numpy(line_desc).astype(np.float32)
+
+    keypoints_np = tensor_to_numpy(point_outputs["keypoints"]).astype(np.float32)
+    keypoint_scores_np = tensor_to_numpy(point_outputs["scores"]).astype(np.float32)
+    keypoint_desc_np = tensor_to_numpy(point_outputs["descriptors"]).astype(np.float32)
+
+    keypoints_xy = scale_keypoints_to_image(
+        keypoints_np,
+        resize_ratio_h=resize_ratio_h,
+        resize_ratio_w=resize_ratio_w,
+    )
+    keypoints_xy, keypoint_scores_np, keypoint_desc_np = clip_keypoints_to_image(
+        keypoints_xy,
+        keypoint_scores_np,
+        keypoint_desc_np,
+        image_width=original_width,
+        image_height=original_height,
+    )
+
+    line_centers_xy, line_segments_xyxy = scale_lines_to_image(
+        lines_np,
+        center_pts_np,
+        image_width=original_width,
+        image_height=original_height,
+        line_map_width=line_map_width,
+        line_map_height=line_map_height,
+    )
+    line_segments_xyxy, line_scores_np, line_desc_np, line_centers_xy = clip_lines_to_image(
+        line_segments_xyxy,
+        line_scores_np,
+        line_desc_np,
+        line_centers_xy,
+        image_width=original_width,
+        image_height=original_height,
+    )
+
+    return {
+        "keypoints": keypoints_xy.astype(np.float32),
+        "scores": keypoint_scores_np.astype(np.float32),
+        "descriptors": keypoint_desc_np.astype(np.float32),
+        "line_segments": line_segments_xyxy.astype(np.float32),
+        "line_scores": line_scores_np.astype(np.float32),
+        "line_descriptors": line_desc_np.astype(np.float32),
+        "line_centers": line_centers_xy.astype(np.float32),
+        "point_feature_map": outputs["xfeat_feats"].detach(),
+        "point_feature_full_hw": np.asarray([int(image_tensor.shape[-2]), int(image_tensor.shape[-1])], dtype=np.int32),
+        "point_feature_original_to_model_scale_xy": np.asarray(
+            [1.0 / max(float(resize_ratio_w), 1e-8), 1.0 / max(float(resize_ratio_h), 1e-8)],
+            dtype=np.float32,
+        ),
+        "descriptor_map": outputs["descriptor_map"].detach(),
+        "descriptor_map_full_hw": np.asarray([int(image_tensor.shape[-2]), int(image_tensor.shape[-1])], dtype=np.int32),
+        "descriptor_map_original_to_model_scale_xy": np.asarray(
+            [1.0 / max(float(resize_ratio_w), 1e-8), 1.0 / max(float(resize_ratio_h), 1e-8)],
+            dtype=np.float32,
+        ),
+    }
 
 
 def run_joint_inference(model, image, decode_cfg, point_decoder=None):

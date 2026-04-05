@@ -103,6 +103,23 @@ confs = {
             "resize_max": 1024,
         },
     },
+    "joint_xfeat_mlsd_hloc_matcher": {
+        "output": "feats-joint-xfeat-mlsd-matcher-r1024",
+        "model": {
+            "name": "joint_xfeat_mlsd_matcher",
+            "config": "/home/hxy/doctor/feature dectect/linedectect/mlsd_pytorchv3/workdir/models/xfeat_mlsd_512_gt_plus_pred_plus_align/cfg.yaml",
+            "checkpoint": "/home/hxy/doctor/feature dectect/linedectect/mlsd_pytorchv3/workdir/models/xfeat_mlsd_512_gt_plus_pred_plus_align/best.pth",
+            "line_score_thresh": 0.10,
+            "line_len_thresh": 8.0,
+            "line_top_k": 500,
+            "point_top_k": 4096,
+            "point_score_thresh": 0.05,
+        },
+        "preprocessing": {
+            "grayscale": False,
+            "resize_max": 1024,
+        },
+    },
     # Resize images to 1600px even if they are originally smaller.
     # Improves the keypoint localization if the images are of good quality.
     "superpoint_max": {
@@ -353,7 +370,7 @@ def main(
     model = Model(conf["model"]).eval().to(device)
 
     loader = torch.utils.data.DataLoader(
-        dataset, num_workers=1, shuffle=False, pin_memory=True
+        dataset, num_workers=0, shuffle=False, pin_memory=True
     )
     for idx, data in enumerate(tqdm(loader)):
         name = dataset.names[idx]
@@ -376,6 +393,16 @@ def main(
             pred["keypoints"] = (pred["keypoints"] + 0.5) * scales[None] - 0.5
             if "scales" in pred:
                 pred["scales"] *= scales.mean()
+            if "point_feature_original_to_model_scale_xy" in pred:
+                pred["point_feature_original_to_model_scale_xy"] = (
+                    pred["point_feature_original_to_model_scale_xy"].astype(np.float32)
+                    / scales.astype(np.float32)
+                )
+            if "descriptor_map_original_to_model_scale_xy" in pred:
+                pred["descriptor_map_original_to_model_scale_xy"] = (
+                    pred["descriptor_map_original_to_model_scale_xy"].astype(np.float32)
+                    / scales.astype(np.float32)
+                )
             # add keypoint uncertainties scaled to the original resolution
             uncertainty = getattr(model, "detection_noise", 1) * scales.mean()
             if "line_segments" in pred:
@@ -385,7 +412,13 @@ def main(
                 pred["line_centers"] = (pred["line_centers"] + 0.5) * scales[None] - 0.5
 
         if as_half:
-            keep_float32 = {"line_segments", "line_centers", "image_size"}
+            keep_float32 = {
+                "line_segments",
+                "line_centers",
+                "image_size",
+                "point_feature_original_to_model_scale_xy",
+                "descriptor_map_original_to_model_scale_xy",
+            }
             for k in pred:
                 dt = pred[k].dtype
                 if k in keep_float32:
