@@ -1,4 +1,5 @@
 import argparse
+import copy
 import json
 import pickle
 from pathlib import Path
@@ -122,10 +123,52 @@ def run(args):
 
     retrieval_conf = extract_features.confs[args.retrieval_conf]
     feature_conf = extract_features.confs[args.feature_conf]
-    joint_matcher_conf = match_point_line_features.confs[args.joint_matcher_conf]
+    joint_matcher_conf = copy.deepcopy(
+        match_point_line_features.confs[args.joint_matcher_conf]
+    )
+    joint_matcher_model_conf = joint_matcher_conf["model"]
+    if args.point_match_score_thresh is not None:
+        joint_matcher_model_conf["point_match_score_thresh"] = float(
+            args.point_match_score_thresh
+        )
+    if args.line_match_score_thresh is not None:
+        joint_matcher_model_conf["line_match_score_thresh"] = float(
+            args.line_match_score_thresh
+        )
+    if args.junction_match_score_thresh is not None:
+        joint_matcher_model_conf["junction_match_score_thresh"] = float(
+            args.junction_match_score_thresh
+        )
+    if args.point_correct_thresh_px is not None:
+        joint_matcher_model_conf["point_correct_thresh_px"] = float(
+            args.point_correct_thresh_px
+        )
+    if args.junction_correct_thresh_px is not None:
+        joint_matcher_model_conf["junction_correct_thresh_px"] = float(
+            args.junction_correct_thresh_px
+        )
+    if args.matcher_max_keypoints is not None:
+        joint_matcher_model_conf["max_keypoints"] = int(args.matcher_max_keypoints)
+    if args.matcher_max_lines is not None:
+        joint_matcher_model_conf["max_lines"] = int(args.matcher_max_lines)
+    if args.endpoint_merge_thresh_px is not None:
+        joint_matcher_model_conf["endpoint_merge_thresh_px"] = float(
+            args.endpoint_merge_thresh_px
+        )
+    if args.drop_keypoints_near_endpoints_px is not None:
+        joint_matcher_model_conf["drop_keypoints_near_endpoints_px"] = float(
+            args.drop_keypoints_near_endpoints_px
+        )
 
     logger.info("Extracting matcher-compatible joint point-line features...")
     features = extract_features.main(feature_conf, images, outputs, overwrite=args.overwrite)
+    logger.info("Preparing junction-aware point augmentation for V3...")
+    junction_feature_summary = match_point_line_features.prepare_junction_features(
+        joint_matcher_conf["model"],
+        features,
+        args.wiregraph_checkpoint,
+        overwrite=args.overwrite,
+    )
 
     logger.info("Preparing reference SfM scaffold from Aachen NVM...")
     colmap_from_nvm.main(
@@ -146,6 +189,9 @@ def run(args):
         outputs,
         wiregraph_checkpoint=args.wiregraph_checkpoint,
         overwrite=args.overwrite,
+    )
+    sfm_point_match_summary = match_point_line_features.summarize_augmented_point_matches(
+        sfm_matches
     )
 
     logger.info("Triangulating reference SfM model from matcher point matches...")
@@ -194,6 +240,9 @@ def run(args):
         wiregraph_checkpoint=args.wiregraph_checkpoint,
         overwrite=args.overwrite,
     )
+    loc_point_match_summary = match_point_line_features.summarize_augmented_point_matches(
+        loc_matches
+    )
 
     query_list = dataset / "queries/*_time_queries_with_intrinsics.txt"
 
@@ -230,6 +279,11 @@ def run(args):
         "feature_conf": args.feature_conf,
         "retrieval_conf": args.retrieval_conf,
         "joint_matcher_conf": args.joint_matcher_conf,
+        "joint_matcher_conf_effective": joint_matcher_conf,
+        "junction_aware_points": True,
+        "junction_feature_summary": junction_feature_summary,
+        "sfm_point_match_summary": sfm_point_match_summary,
+        "loc_point_match_summary": loc_point_match_summary,
         "wiregraph_checkpoint": str(args.wiregraph_checkpoint),
         "num_covis": int(args.num_covis),
         "num_loc": int(args.num_loc),
@@ -311,6 +365,17 @@ if __name__ == "__main__":
         type=str,
         default="joint_wiregraph",
         choices=list(match_point_line_features.confs.keys()),
+    )
+    parser.add_argument("--point_match_score_thresh", type=float, default=None)
+    parser.add_argument("--line_match_score_thresh", type=float, default=None)
+    parser.add_argument("--junction_match_score_thresh", type=float, default=None)
+    parser.add_argument("--point_correct_thresh_px", type=float, default=None)
+    parser.add_argument("--junction_correct_thresh_px", type=float, default=None)
+    parser.add_argument("--matcher_max_keypoints", type=int, default=None)
+    parser.add_argument("--matcher_max_lines", type=int, default=None)
+    parser.add_argument("--endpoint_merge_thresh_px", type=float, default=None)
+    parser.add_argument(
+        "--drop_keypoints_near_endpoints_px", type=float, default=None
     )
     parser.add_argument("--ransac_thresh", type=float, default=12.0)
     parser.add_argument("--line_map_min_support_count", type=int, default=3)

@@ -37,8 +37,19 @@ def get_keypoints(
     path: Path, name: str, return_uncertainty: bool = False
 ) -> np.ndarray:
     with h5py.File(str(path), "r", libver="latest") as hfile:
-        dset = hfile[name]["keypoints"]
+        grp = hfile[name]
+        dset = grp["keypoints"]
         p = dset.__array__()
+        if "junctions" in grp:
+            junctions = grp["junctions"].__array__()
+            if junctions.size > 0:
+                p = np.concatenate(
+                    [
+                        np.asarray(p, dtype=np.float32),
+                        np.asarray(junctions, dtype=np.float32),
+                    ],
+                    axis=0,
+                )
         uncertainty = dset.attrs.get("uncertainty")
     if return_uncertainty:
         return p, uncertainty

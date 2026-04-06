@@ -56,8 +56,16 @@ class QueryLocalizer:
         self.config = config or {}
 
     def localize(self, points2D_all, points2D_idxs, points3D_id, query_camera):
-        points2D = points2D_all[points2D_idxs]
-        points3D = [self.reconstruction.points3D[j].xyz for j in points3D_id]
+        if len(points2D_idxs) == 0 or len(points3D_id) == 0:
+            return None
+
+        points2D = np.asarray(points2D_all[points2D_idxs], dtype=np.float64)
+        points3D = np.asarray(
+            [self.reconstruction.points3D[j].xyz for j in points3D_id], dtype=np.float64
+        )
+        if len(points2D) == 0 or len(points3D) == 0:
+            return None
+
         # Compatibility: try old API first (pycolmap < 3.10), then new API
         try:
             # Old pycolmap API: absolute_pose_estimation (version 0.6.1)
@@ -117,7 +125,9 @@ def pose_from_cluster(
     idxs = list(kp_idx_to_3D.keys())
     mkp_idxs = [i for i in idxs for _ in kp_idx_to_3D[i]]
     mp3d_ids = [j for i in idxs for j in kp_idx_to_3D[i]]
-    ret = localizer.localize(kpq, mkp_idxs, mp3d_ids, query_camera, **kwargs)
+    ret = None
+    if len(mkp_idxs) > 0 and len(mp3d_ids) > 0:
+        ret = localizer.localize(kpq, mkp_idxs, mp3d_ids, query_camera, **kwargs)
     if ret is not None:
         ret["camera"] = query_camera
 

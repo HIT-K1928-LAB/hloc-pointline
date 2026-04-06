@@ -11,6 +11,7 @@ _C.datasets = CN()
 _C.datasets.name = ''
 _C.datasets.input_size = 512
 _C.datasets.with_centermap_extend = False
+_C.datasets.descriptor_views_per_sample = 1
 
 
 ##
