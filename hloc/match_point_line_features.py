@@ -19,6 +19,7 @@ from .match_features import FeaturePairsDataset
 from .matchers.line_nearest_neighbor import (
     estimate_homography_from_matches,
     evaluate_matches_against_homography,
+    post_filter_line_result,
 )
 from .utils.parsers import (
     names_to_pair,
@@ -45,6 +46,40 @@ confs = {
             "endpoint_merge_thresh_px": 4.0,
             "drop_keypoints_near_endpoints_px": 4.0,
             "ransac_reproj_thresh": 12.0,
+            "point_correct_thresh_px": 6.0,
+            "junction_correct_thresh_px": 6.0,
+            "line_inlier_endpoint_thresh": 18.0,
+            "line_inlier_center_thresh": 14.0,
+            "line_inlier_angle_thresh_deg": 10.0,
+            "line_inlier_length_ratio_min": 0.60,
+        },
+    },
+    "joint_wiregraph_v2style_hybrid": {
+        "point_output": "matches-joint-wiregraph-v2style-hybrid",
+        "line_output": "line-matches-joint-wiregraph-v2style-hybrid",
+        "model": {
+            "config": "/home/hxy/doctor/feature dectect/linedectect/mlsd_pytorchv3/workdir/models/xfeat_mlsd_512_gt_plus_pred_plus_align/cfg.yaml",
+            "variant": "structured_linegraph",
+            "junction_feature_source": "line_descriptor_map",
+            "use_points": True,
+            "use_line_message_passing": True,
+            "point_match_score_thresh": 0.001,
+            "line_match_score_thresh": 0.001,
+            "junction_match_score_thresh": 0.001,
+            "max_keypoints": 4096,
+            "max_lines": 500,
+            "max_lines_per_image": 120,
+            "endpoint_merge_thresh_px": 4.0,
+            "drop_keypoints_near_endpoints_px": 0.0,
+            "post_min_line_score": 0.10,
+            "post_min_line_length_px": 30.0,
+            "line_nms_center_thresh": 20.0,
+            "line_nms_angle_thresh_deg": 8.0,
+            "line_nms_endpoint_thresh": 24.0,
+            "use_v2_style_line_prefilter": True,
+            "filter_point_junction_matches_with_geometry": False,
+            "allow_line_fallback_geometry": False,
+            "ransac_reproj_thresh": 8.0,
             "point_correct_thresh_px": 6.0,
             "junction_correct_thresh_px": 6.0,
             "line_inlier_endpoint_thresh": 18.0,
@@ -87,6 +122,19 @@ def build_junction_builder_signature(conf: Dict) -> Dict:
         "variant": str(conf_get(conf, "variant", "structured_linegraph")),
         "max_lines": int(conf_get(conf, "max_lines", 256)),
         "endpoint_merge_thresh_px": float(conf_get(conf, "endpoint_merge_thresh_px", 4.0)),
+        "max_lines_per_image": int(conf_get(conf, "max_lines_per_image", 0)),
+        "post_min_line_score": float(conf_get(conf, "post_min_line_score", 0.0)),
+        "post_min_line_length_px": float(conf_get(conf, "post_min_line_length_px", 0.0)),
+        "line_nms_center_thresh": float(conf_get(conf, "line_nms_center_thresh", 0.0)),
+        "line_nms_angle_thresh_deg": float(
+            conf_get(conf, "line_nms_angle_thresh_deg", 0.0)
+        ),
+        "line_nms_endpoint_thresh": float(
+            conf_get(conf, "line_nms_endpoint_thresh", 0.0)
+        ),
+        "use_v2_style_line_prefilter": bool(
+            conf_get(conf, "use_v2_style_line_prefilter", False)
+        ),
     }
 
 
@@ -110,6 +158,12 @@ def build_augmented_point_match_signature(conf: Dict) -> Dict:
         "junction_correct_thresh_px": float(
             conf_get(conf, "junction_correct_thresh_px", 6.0)
         ),
+        "filter_point_junction_matches_with_geometry": bool(
+            conf_get(conf, "filter_point_junction_matches_with_geometry", True)
+        ),
+        "allow_line_fallback_geometry": bool(
+            conf_get(conf, "allow_line_fallback_geometry", True)
+        ),
         "line_inlier_endpoint_thresh": float(
             conf_get(conf, "line_inlier_endpoint_thresh", 18.0)
         ),
@@ -131,6 +185,25 @@ def _decode_h5_dataset_scalar(dataset) -> Optional[str]:
 
 def _encode_h5_string(value: str) -> np.bytes_:
     return np.bytes_(str(value))
+
+
+def _prefilter_line_triplet(
+    lines_xyxy,
+    line_scores,
+    line_descriptors,
+    conf: Dict,
+):
+    lines_xyxy = np.asarray(lines_xyxy, dtype=np.float32).reshape(-1, 4)
+    line_scores = np.asarray(line_scores, dtype=np.float32).reshape(-1)
+    line_descriptors = np.asarray(line_descriptors, dtype=np.float32)
+    if line_descriptors.ndim == 1:
+        line_descriptors = line_descriptors.reshape(1, -1)
+    if line_descriptors.size == 0:
+        line_descriptors = np.zeros((lines_xyxy.shape[0], 0), dtype=np.float32)
+    if not bool(conf_get(conf, "use_v2_style_line_prefilter", False)):
+        keep = np.arange(lines_xyxy.shape[0], dtype=np.int64)
+        return lines_xyxy, line_scores, line_descriptors, keep
+    return post_filter_line_result(lines_xyxy, line_scores, line_descriptors, conf)
 
 
 def _validate_junction_signature(feature_path: Path, conf: Dict):
@@ -254,13 +327,19 @@ def prepare_junction_features(
             image_size = grp["image_size"].__array__().reshape(-1)
             image_width = int(image_size[0])
             image_height = int(image_size[1])
+            line_segments, line_scores, line_descriptors, _ = _prefilter_line_triplet(
+                grp["line_segments"].__array__(),
+                grp["line_scores"].__array__(),
+                grp["line_descriptors"].__array__(),
+                conf,
+            )
             graph = build_wireframe_graph(
                 keypoints_xy=torch.from_numpy(grp["keypoints"].__array__()).float(),
                 keypoint_scores=torch.from_numpy(grp["scores"].__array__()).float(),
                 keypoint_descriptors=torch.from_numpy(grp["descriptors"].__array__()).float(),
-                line_segments_xyxy=torch.from_numpy(grp["line_segments"].__array__()).float(),
-                line_scores=torch.from_numpy(grp["line_scores"].__array__()).float(),
-                line_descriptors=torch.from_numpy(grp["line_descriptors"].__array__()).float(),
+                line_segments_xyxy=torch.from_numpy(line_segments).float(),
+                line_scores=torch.from_numpy(line_scores).float(),
+                line_descriptors=torch.from_numpy(line_descriptors).float(),
                 image_height=image_height,
                 image_width=image_width,
                 device="cpu",
@@ -625,17 +704,20 @@ def _filter_pointlike_matches(
     primitive_candidate,
     fallback_candidate,
     thresh_px: float,
+    apply_filter: bool = True,
 ):
     eval_homography, eval_mask, eval_source = _resolve_eval_geometry(
         primitive_candidate,
         fallback_candidate,
     )
     if eval_homography is None:
+        retained_matches = list(matches)
         return list(matches), {
             "candidate_count": int(len(matches)),
             "inlier_count": 0,
-            "retained_count": int(len(matches)),
+            "retained_count": int(len(retained_matches)),
             "geometry_source": str(eval_source),
+            "retained_matches": retained_matches,
         }
 
     evaluated = _evaluate_pointlike_matches(
@@ -651,11 +733,13 @@ def _filter_pointlike_matches(
         for match, record in zip(matches, evaluated)
         if bool(record.get("correct", False))
     ]
+    retained_matches = filtered_matches if apply_filter else list(matches)
     return filtered_matches, {
         "candidate_count": int(len(matches)),
         "inlier_count": int(len(filtered_matches)),
-        "retained_count": int(len(filtered_matches)),
+        "retained_count": int(len(retained_matches)),
         "geometry_source": str(eval_source),
+        "retained_matches": retained_matches,
     }
 
 
@@ -720,13 +804,37 @@ class WireGraphPointLineRunner:
         image_size = data[f"image_size{suffix}"][0].detach().cpu().numpy().reshape(-1)
         image_width = int(image_size[0])
         image_height = int(image_size[1])
-        return self.build_wireframe_graph(
+        line_segments_np = data[f"line_segments{suffix}"][0].detach().cpu().numpy().astype(
+            np.float32
+        )
+        line_scores_np = data[f"line_scores{suffix}"][0].detach().cpu().numpy().astype(
+            np.float32
+        )
+        line_descriptors_np = data[f"line_descriptors{suffix}"][0].detach().cpu().numpy().astype(
+            np.float32
+        )
+        (
+            filtered_line_segments_np,
+            filtered_line_scores_np,
+            filtered_line_descriptors_np,
+            line_prefilter_indices_np,
+        ) = _prefilter_line_triplet(
+            line_segments_np,
+            line_scores_np,
+            line_descriptors_np,
+            self.conf,
+        )
+        graph = self.build_wireframe_graph(
             keypoints_xy=data[f"keypoints{suffix}"][0],
             keypoint_scores=data[f"scores{suffix}"][0],
             keypoint_descriptors=data[f"descriptors{suffix}"][0],
-            line_segments_xyxy=data[f"line_segments{suffix}"][0],
-            line_scores=data[f"line_scores{suffix}"][0],
-            line_descriptors=data[f"line_descriptors{suffix}"][0],
+            line_segments_xyxy=torch.from_numpy(filtered_line_segments_np).to(
+                device=self.device
+            ),
+            line_scores=torch.from_numpy(filtered_line_scores_np).to(device=self.device),
+            line_descriptors=torch.from_numpy(filtered_line_descriptors_np).to(
+                device=self.device
+            ),
             image_height=image_height,
             image_width=image_width,
             device=self.device,
@@ -752,6 +860,10 @@ class WireGraphPointLineRunner:
                 conf_get(self.conf, "junction_feature_source", "line_descriptor_map")
             ),
         )
+        line_prefilter_indices = torch.from_numpy(line_prefilter_indices_np).to(
+            device=self.device, dtype=torch.long
+        )
+        return graph, line_prefilter_indices
 
     @staticmethod
     def _remap_matches(matches, source_indices0, source_indices1):
@@ -790,8 +902,8 @@ class WireGraphPointLineRunner:
     def __call__(self, data: Dict[str, torch.Tensor]):
         keypoints0_xy = data["keypoints0"][0].detach().cpu().numpy().astype(np.float32)
         keypoints1_xy = data["keypoints1"][0].detach().cpu().numpy().astype(np.float32)
-        graph0 = self._build_graph(data, "0")
-        graph1 = self._build_graph(data, "1")
+        graph0, line_prefilter_indices0 = self._build_graph(data, "0")
+        graph1, line_prefilter_indices1 = self._build_graph(data, "1")
         outputs = self.matcher.predict(
             graph0,
             graph1,
@@ -812,8 +924,8 @@ class WireGraphPointLineRunner:
         )
         line_matches = self._remap_matches(
             outputs["line_matches"],
-            graph0.line_source_indices,
-            graph1.line_source_indices,
+            line_prefilter_indices0[graph0.line_source_indices],
+            line_prefilter_indices1[graph1.line_source_indices],
         )
         points0_xy, raw_keypoint_count0, junction_count0 = self._get_augmented_points(data, "0")
         points1_xy, raw_keypoint_count1, _ = self._get_augmented_points(data, "1")
@@ -824,6 +936,9 @@ class WireGraphPointLineRunner:
         point_correct_thresh = float(conf_get(self.conf, "point_correct_thresh_px", 6.0))
         junction_correct_thresh = float(
             conf_get(self.conf, "junction_correct_thresh_px", 6.0)
+        )
+        filter_point_junction = bool(
+            conf_get(self.conf, "filter_point_junction_matches_with_geometry", True)
         )
 
         point_homography, point_inlier_mask = _estimate_homography_from_point_matches(
@@ -882,6 +997,7 @@ class WireGraphPointLineRunner:
             point_geometry_candidate,
             fallback_geometry_candidate,
             thresh_px=point_correct_thresh,
+            apply_filter=filter_point_junction,
         )
         filtered_junction_matches, junction_filter_meta = _filter_pointlike_matches(
             junction_matches,
@@ -890,9 +1006,12 @@ class WireGraphPointLineRunner:
             junction_geometry_candidate,
             fallback_geometry_candidate,
             thresh_px=junction_correct_thresh,
+            apply_filter=filter_point_junction,
         )
-        augmented_point_matches = list(filtered_point_matches)
-        for match in filtered_junction_matches:
+        retained_point_matches = list(point_filter_meta.pop("retained_matches"))
+        retained_junction_matches = list(junction_filter_meta.pop("retained_matches"))
+        augmented_point_matches = list(retained_point_matches)
+        for match in retained_junction_matches:
             augmented_point_matches.append(
                 {
                     "idx1": raw_keypoint_count0 + int(match["idx1"]),
@@ -906,8 +1025,8 @@ class WireGraphPointLineRunner:
         point_pred = build_point_prediction(
             augmented_point_matches,
             raw_keypoint_count0 + junction_count0,
-            num_keypoint_matches=len(filtered_point_matches),
-            num_junction_matches=len(filtered_junction_matches),
+            num_keypoint_matches=len(retained_point_matches),
+            num_junction_matches=len(retained_junction_matches),
             num_keypoint_candidates=point_filter_meta["candidate_count"],
             num_junction_candidates=junction_filter_meta["candidate_count"],
             num_keypoint_inliers=point_filter_meta["inlier_count"],
@@ -922,6 +1041,9 @@ class WireGraphPointLineRunner:
             num_lines0=int(data["line_segments0"][0].shape[0]),
             line_geometry_candidate=line_geometry_candidate,
             fallback_geometry_candidate=fallback_geometry_candidate,
+            allow_fallback_geometry=bool(
+                conf_get(self.conf, "allow_line_fallback_geometry", True)
+            ),
             endpoint_thresh=float(conf_get(self.conf, "line_inlier_endpoint_thresh", 18.0)),
             center_thresh=float(conf_get(self.conf, "line_inlier_center_thresh", 14.0)),
             angle_thresh=float(conf_get(self.conf, "line_inlier_angle_thresh_deg", 10.0)),
@@ -989,6 +1111,7 @@ def build_line_prediction(
     num_lines0: int,
     line_geometry_candidate,
     fallback_geometry_candidate,
+    allow_fallback_geometry: bool,
     endpoint_thresh: float,
     center_thresh: float,
     angle_thresh: float,
@@ -1011,10 +1134,26 @@ def build_line_prediction(
     verified_endpoint_errors = []
     verified_center_errors = []
     verified_angle_errors = []
-    line_eval_homography, line_eval_inlier_mask, line_geometry_source = _resolve_eval_geometry(
-        line_geometry_candidate,
-        fallback_geometry_candidate,
-    )
+    if allow_fallback_geometry:
+        (
+            line_eval_homography,
+            line_eval_inlier_mask,
+            line_geometry_source,
+        ) = _resolve_eval_geometry(
+            line_geometry_candidate,
+            fallback_geometry_candidate,
+        )
+    elif (
+        line_geometry_candidate is not None
+        and line_geometry_candidate.get("homography") is not None
+    ):
+        line_eval_homography = line_geometry_candidate["homography"]
+        line_eval_inlier_mask = line_geometry_candidate.get("mask")
+        line_geometry_source = str(line_geometry_candidate["source"])
+    else:
+        line_eval_homography = None
+        line_eval_inlier_mask = None
+        line_geometry_source = "geometry_unavailable"
 
     if line_eval_homography is None:
         evaluated = [dict(match) for match in line_matches]
